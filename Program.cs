@@ -18,11 +18,11 @@ namespace nfs2iso2nfs
         public static bool enc = false;
         public static bool keepFiles = false;
         public static bool keepLegit = false;
-        public static string keyFile = "..\\code\\htk.bin";
+        public static string keyFile = Path.Combine("..","code","htk.bin");
         public static string isoFile = "game.iso";
         public static string wiiKeyFile = "wii_common_key.bin";
         public static string nfsDir = "";
-        public static string fwFile = "..\\code\\fw.img";
+        public static string fwFile = Path.Combine("..","code","fw.img");
 
         static void Main(string[] args)
         {
@@ -34,7 +34,7 @@ namespace nfs2iso2nfs
                 return;
             if (dec)
             {
-                byte[] header = getHeader(nfsDir + "\\hif_000000.nfs");
+                byte[] header = getHeader(Path.Combine(nfsDir, "hif_000000.nfs"));
                 combineNFSFiles("hif.nfs");
                 EnDecryptNFS("hif.nfs", "hif_dec.nfs", key, buildZero(key.Length), false, header);
                 if (!keepFiles)
@@ -111,16 +111,17 @@ namespace nfs2iso2nfs
                         fwFile = args[i + 1];
                         i++;
                         break;
+                    case "-h": // fallthrough
                     case "-help":
                         Console.WriteLine("+++++ NFS2ISO2NFS v0.4+++++");
                         Console.WriteLine();
                         Console.WriteLine("-dec            Decrypt .nfs files to an .iso file.");
                         Console.WriteLine("-enc            Encrypt an .iso file to -nfs file(s)");
-                        Console.WriteLine("-key <file>     Location of AES key file. DEFAULT: code\\htk.bin.");
+                        Console.WriteLine("-key <file>     Location of AES key file. DEFAULT: code/htk.bin.");
                         Console.WriteLine("-wiikey <file>  Location of Wii Common key file. DEFAULT: wii_common_key.bin.");
                         Console.WriteLine("-iso <file>     Location of .iso file. DEFAULT: game.iso.");
                         Console.WriteLine("-nfs <file>     Location of .nfs files. DEFAULT: current Directory.");
-                        Console.WriteLine("-fwimg <file>   Location of fw.img. DEFAULT: code\\fw.img.");
+                        Console.WriteLine("-fwimg <file>   Location of fw.img. DEFAULT: code/fw.img.");
                         Console.WriteLine("-keep           Don't delete the files produced in intermediate steps.");
                         Console.WriteLine("-legit          Don't patch fw.img to allow fakesigned content");
                         Console.WriteLine("-help           Print this text.");
@@ -131,26 +132,26 @@ namespace nfs2iso2nfs
 
             string dir = Directory.GetCurrentDirectory();
             if (!Path.IsPathRooted(keyFile))
-                keyFile = dir + "\\" + keyFile;
+                keyFile = Path.Combine(dir, keyFile);
             if (!Path.IsPathRooted(isoFile))
-                isoFile = dir + "\\" + isoFile;
+                isoFile = Path.Combine(dir, isoFile);
             if (!Path.IsPathRooted(wiiKeyFile))
-                wiiKeyFile = dir + "\\" + wiiKeyFile;
+                wiiKeyFile = Path.Combine(dir, wiiKeyFile);
             if (!Path.IsPathRooted(nfsDir))
-                nfsDir = dir + "\\" + nfsDir;
+                nfsDir = Path.Combine(dir, nfsDir);
             if (!Path.IsPathRooted(fwFile))
-                fwFile = dir + "\\" + fwFile;
+                fwFile = Path.Combine(dir, fwFile);
 
-            if (dec || ((!dec && !enc) && File.Exists(nfsDir + "\\hif_000000.nfs")))
+            if (dec || ((!dec && !enc) && File.Exists(Path.Combine(nfsDir, "hif_000000.nfs"))))
             {
                 Console.WriteLine("+++++ NFS2ISO +++++");
                 Console.WriteLine();
-                if (dec && !enc && !File.Exists(nfsDir + "\\hif_000000.nfs"))
+                if (dec && !enc && !File.Exists(Path.Combine(nfsDir, "hif_000000.nfs")))
                 {
                     Console.WriteLine(".nfs files not found! Exiting...");
                     return -1;
                 }
-                else if ((!dec && !enc) && File.Exists(nfsDir + "\\hif_000000.nfs"))
+                else if ((!dec && !enc) && File.Exists(Path.Combine(nfsDir, "hif_000000.nfs")))
                 {  
                     Console.WriteLine("You haven't specified if you want to use nfs2iso or iso2nfs");
                     Console.WriteLine("Found .nfs files! Assuming you want to use nfs2iso...");
@@ -254,7 +255,7 @@ namespace nfs2iso2nfs
             {
                 Console.WriteLine("Looking for .nfs files...");
                 int nfsNo = -1;
-                while (File.Exists(nfsDir + "\\hif_" + String.Format("{0:D6}", nfsNo + 1) + ".nfs"))
+                while (File.Exists(Path.Combine(nfsDir, "hif_" + String.Format("{0:D6}", nfsNo + 1) + ".nfs")))
                     nfsNo++;
                 Console.WriteLine((nfsNo + 1) + " .nfs files found!");
                 Console.WriteLine("Joining .nfs files...");
@@ -262,7 +263,7 @@ namespace nfs2iso2nfs
                 for (int i = 0; i <= nfsNo; i++)
                 {
                     Console.WriteLine("Processing hif_" + String.Format("{0:D6}", i) + ".nfs...");
-                    var nfsTemp = new BinaryReader(File.OpenRead(nfsDir + "\\hif_" + String.Format("{0:D6}", i) + ".nfs"));
+                    var nfsTemp = new BinaryReader(File.OpenRead(Path.Combine(nfsDir, "hif_" + String.Format("{0:D6}", i) + ".nfs")));
                     if (i == 0)
                     {
                         nfsTemp.ReadBytes(HEADER_SIZE);
@@ -284,7 +285,7 @@ namespace nfs2iso2nfs
                 do
                 {
                     Console.WriteLine("Building hif_" + String.Format("{0:D6}", i) + ".nfs...");
-                    var nfsTemp = new BinaryWriter(File.OpenWrite(Directory.GetCurrentDirectory() + "\\hif_" + String.Format("{0:D6}", i) + ".nfs"));
+                    var nfsTemp = new BinaryWriter(File.OpenWrite(Path.Combine(Directory.GetCurrentDirectory(), "hif_" + String.Format("{0:D6}", i) + ".nfs")));
                     nfsTemp.Write(nfs.ReadBytes(size > NFS_SIZE ? NFS_SIZE : (int)size));
                     size -= NFS_SIZE;
                     i++;
@@ -810,7 +811,7 @@ namespace nfs2iso2nfs
             File.Copy(fwFile, "fw.img.tmp");                                                        // create new temp file
 
             using (var in_ios = new BinaryReader(File.OpenRead(fwFile)))
-            using (var out_ios = new BinaryWriter(File.OpenWrite(Directory.GetCurrentDirectory() + "\\fw.img.tmp")))
+            using (var out_ios = new BinaryWriter(File.OpenWrite(Path.Combine(Directory.GetCurrentDirectory(), "fw.img.tmp"))))
             {
                 Console.WriteLine();
                 Console.WriteLine("Patching fw.img to enable fakesigning...");
